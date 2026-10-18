@@ -1,15 +1,46 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +str name
+        +str species
+        +int age
+        +str notes
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Task {
+        +str title
+        +time time
+        +int duration
+        +str priority
+        +bool completed
+        +mark_complete() void
     }
 
-    ClassName --> AnotherClass : relationship
+    class AddPet {
+        +add_pet(name, species, age, notes) Pet
+        +validate() bool
+    }
+
+    class PetSchedule {
+        +Pet pet
+        +List~Task~ tasks
+        +add_task(title, time, duration, priority) Task
+        +remove_task(task) void
+        +complete_task(task) void
+        +get_tasks() List~Task~
+    }
+
+    class TodaysTasks {
+        +date date
+        +List~Task~ tasks
+        +build_from(schedules) void
+        +sort_by_time() List~Task~
+        +get_pending() List~Task~
+        +mark_done(task) void
+    }
+
+    AddPet ..> Pet : creates
+    AddPet --> PetSchedule : creates a schedule for each new pet
+    PetSchedule o-- Pet : belongs to
+    PetSchedule "1" *-- "many" Task : contains
+    PetSchedule --> TodaysTasks : supplies tasks due today
+    TodaysTasks o-- Task : lists today's
