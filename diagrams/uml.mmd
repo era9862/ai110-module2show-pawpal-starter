@@ -29,8 +29,10 @@ classDiagram
         +int duration
         +str priority
         +bool completed
-        +mark_complete() void
+        +mark_complete() Task
+        +next_occurrence() Task
         +is_due_on(day) bool
+        +minute_range() int pair
     }
 
     class AddPet {
@@ -44,7 +46,7 @@ classDiagram
         +List~Task~ tasks
         +add_task(title, due_time, duration, priority, due_date, frequency) Task
         +remove_task(task) void
-        +complete_task(task) void
+        +complete_task(task) Task
         +get_tasks() List~Task~
     }
 
@@ -54,8 +56,10 @@ classDiagram
         +build_from(schedules) void
         +sort_by_time() List~Task~
         +get_pending() List~Task~
+        +filter_tasks(pet_name, completed) List~Task~
         +find_conflicts() List~Task pair~
-        +mark_done(task) void
+        +conflict_warnings() List~str~
+        +mark_done(task) Task
     }
 
     Owner "1" o-- "many" Pet : owns
@@ -67,5 +71,5 @@ classDiagram
     Task "many" --> "1" Pet : for
     PetSchedule --> TodaysTasks : supplies tasks due today
     TodaysTasks o-- Task : lists today's
-    PetSchedule ..> Task : complete_task calls mark_complete
-    TodaysTasks ..> Task : mark_done calls mark_complete
+    PetSchedule ..> Task : complete_task calls mark_complete and stores next_occurrence
+    TodaysTasks ..> PetSchedule : mark_done completes via the owning schedule

@@ -35,7 +35,7 @@ The core logic lives in [pawpal_system.py](pawpal_system.py) (UML in [diagrams/u
 | `Task` | One care task: title, pet, time, date, frequency (`once`/`daily`/`weekly`), duration, priority and completion. `mark_complete()` is the only place completion changes, and `is_due_on(day)` decides if it applies on a given day. |
 | `AddPet` | Validates input, builds a `Pet` and hands it to `Owner.add_pet()`. |
 | `PetSchedule` | One pet's task list. `add_task()` creates a `Task` for that pet, and `get_tasks()` returns them sorted by time. |
-| `TodaysTasks` | The day's combined view. `build_from()` collects the tasks due on that day from all schedules. It can sort them by time and priority, list pending ones and detect overlapping tasks with `find_conflicts()`. |
+| `TodaysTasks` | The day's combined view. `build_from()` collects the tasks due on that day from all schedules. It can sort, filter, warn about overlapping tasks and complete tasks (see Smarter Scheduling below). |
 
 ### Flow
 
@@ -43,10 +43,6 @@ The core logic lives in [pawpal_system.py](pawpal_system.py) (UML in [diagrams/u
 2. Tasks are added through the pet's `PetSchedule`.
 3. `TodaysTasks.build_from(owner.get_schedules())` gathers everything due today.
 4. The result is sorted, checked for conflicts and displayed.
-
-### Known limitation
-
-A recurring task stays marked complete once finished, so a daily task done today still shows as done tomorrow. Tracking completion per day would fix this.
 
 ## Getting started
 
@@ -102,14 +98,31 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+`TodaysTasks` plays the scheduler role in this project, so the methods below live there unless noted. Run `python main.py` to see all of them in the terminal.
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `TodaysTasks.sort_by_time()` | Orders by `due_time`, then by priority (high first). |
+| Filtering | `TodaysTasks.filter_tasks(pet_name, completed)` | By pet name, by done/pending, or both. Results stay in time order. |
+| Conflict handling | `TodaysTasks.find_conflicts()`, `TodaysTasks.conflict_warnings()` | Detects overlapping time ranges for the same or different pets and returns warning text instead of raising. |
+| Recurring tasks | `Task.mark_complete()`, `Task.next_occurrence()`, `PetSchedule.complete_task()`, `TodaysTasks.mark_done()` | Completing a `daily` or `weekly` task creates the next copy. |
+
+### Sorting
+`sort_by_time()` uses `sorted()` with a tuple key, `(task.due_time, priority_rank)`. Times are `datetime.time` objects, so they compare correctly without string handling. Tasks at the same time are ordered high, then medium, then low priority.
+
+### Filtering
+`filter_tasks(pet_name=None, completed=None)` keeps a task only if it matches every filter given. Leave a filter as `None` to ignore it, for example `filter_tasks(completed=False)` for all pending tasks or `filter_tasks(pet_name="Rex")` for one pet.
+
+### Conflict detection
+`find_conflicts()` compares each task's time range (`Task.minute_range()`, start to start plus duration) with the tasks after it in time order. Two tasks conflict if their ranges overlap, so a 9:00 task of 30 minutes conflicts with one at 9:15 but not with one at 9:30. A task with no duration counts as one minute. `conflict_warnings()` turns each pair into a message such as `Warning: 'Medication' at 09:00 overlaps 'Brush fur' at 09:00 for Whiskers`, so the app can show it and carry on. The warning names both pets when they differ. Nothing is rescheduled automatically.
+
+### Recurring tasks
+Each `Task` is one occurrence on one `due_date`. `Task.mark_complete()` marks it done once and returns the next occurrence, built by `next_occurrence()` with `timedelta(days=1)` for `daily` or `timedelta(days=7)` for `weekly`. `PetSchedule.complete_task()` adds that new task to the schedule, and `TodaysTasks.mark_done()` finds the owning schedule and calls it. One-off tasks return nothing, and completing the same task twice does not create a second copy.
+
+Because every occurrence has its own date and its own completion flag, a daily task finished today is not shown as done tomorrow.
+
+### Tradeoff
+A recurring task is only due on its exact `due_date`. If you skip a day, the missed occurrence does not roll forward into the next day's list.
 
 ## 📸 Demo Walkthrough
 
