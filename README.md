@@ -22,6 +22,32 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Implementation summary
+
+The core logic lives in [pawpal_system.py](pawpal_system.py) (UML in [diagrams/uml.mmd](diagrams/uml.mmd)). It is plain Python with no UI dependency. [main.py](main.py) is a command-line demo that prints today's schedule, and [tests/test_pawpal.py](tests/test_pawpal.py) holds the tests. The Streamlit UI in `app.py` is not connected yet.
+
+### How the classes work together
+
+| Class | Role |
+|-------|------|
+| `Owner` | Holds the owner's details, their `Pet`s and one `PetSchedule` per pet. `add_pet()` registers a pet and creates its schedule. |
+| `Pet` | Basic pet info (name, species, age, notes) and a link back to its `Owner`. |
+| `Task` | One care task: title, pet, time, date, frequency (`once`/`daily`/`weekly`), duration, priority and completion. `mark_complete()` is the only place completion changes, and `is_due_on(day)` decides if it applies on a given day. |
+| `AddPet` | Validates input, builds a `Pet` and hands it to `Owner.add_pet()`. |
+| `PetSchedule` | One pet's task list. `add_task()` creates a `Task` for that pet, and `get_tasks()` returns them sorted by time. |
+| `TodaysTasks` | The day's combined view. `build_from()` collects the tasks due on that day from all schedules. It can sort them by time and priority, list pending ones and detect overlapping tasks with `find_conflicts()`. |
+
+### Flow
+
+1. `AddPet` creates a `Pet` and registers it with the `Owner`, which creates and stores its `PetSchedule`.
+2. Tasks are added through the pet's `PetSchedule`.
+3. `TodaysTasks.build_from(owner.get_schedules())` gathers everything due today.
+4. The result is sorted, checked for conflicts and displayed.
+
+### Known limitation
+
+A recurring task stays marked complete once finished, so a daily task done today still shows as done tomorrow. Tracking completion per day would fix this.
+
 ## Getting started
 
 ### Setup
@@ -47,11 +73,15 @@ pip install -r requirements.txt
 Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Today's Schedule for Jordan - Sunday, October 18, 2026
+============================================================
+[ ] 07:30 AM  Morning walk   Rex         30 min  (high)
+[ ] 09:00 AM  Medication     Whiskers     5 min  (high)
+[ ] 06:00 PM  Dinner         Rex         15 min  (medium)
+[ ] 06:10 PM  Playtime       Whiskers    20 min  (low)
+
+Conflicts:
+  ! Dinner (Rex) overlaps Playtime (Whiskers)
 ```
 
 ## 🧪 Testing PawPal+

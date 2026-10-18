@@ -4,9 +4,11 @@ classDiagram
         +str email
         +str phone
         +List~Pet~ pets
-        +add_pet(pet) void
+        +List~PetSchedule~ schedules
+        +add_pet(pet) PetSchedule
         +remove_pet(pet) void
         +get_pets() List~Pet~
+        +get_schedules() List~PetSchedule~
     }
 
     class Pet {
@@ -18,24 +20,29 @@ classDiagram
     }
 
     class Task {
+        +str id
         +str title
-        +time time
+        +Pet pet
+        +time due_time
+        +date due_date
+        +str frequency
         +int duration
         +str priority
         +bool completed
         +mark_complete() void
+        +is_due_on(day) bool
     }
 
     class AddPet {
         +Owner owner
         +add_pet(name, species, age, notes) Pet
-        +validate() bool
+        +validate(name, species, age) bool
     }
 
     class PetSchedule {
         +Pet pet
         +List~Task~ tasks
-        +add_task(title, time, duration, priority) Task
+        +add_task(title, due_time, duration, priority, due_date, frequency) Task
         +remove_task(task) void
         +complete_task(task) void
         +get_tasks() List~Task~
@@ -47,14 +54,18 @@ classDiagram
         +build_from(schedules) void
         +sort_by_time() List~Task~
         +get_pending() List~Task~
+        +find_conflicts() List~Task pair~
         +mark_done(task) void
     }
 
     Owner "1" o-- "many" Pet : owns
+    Owner "1" *-- "many" PetSchedule : stores
     AddPet --> Owner : adds pet for
     AddPet ..> Pet : creates
-    AddPet --> PetSchedule : creates a schedule for each new pet
-    PetSchedule o-- Pet : belongs to
+    PetSchedule "1" --> "1" Pet : belongs to
     PetSchedule "1" *-- "many" Task : contains
+    Task "many" --> "1" Pet : for
     PetSchedule --> TodaysTasks : supplies tasks due today
     TodaysTasks o-- Task : lists today's
+    PetSchedule ..> Task : complete_task calls mark_complete
+    TodaysTasks ..> Task : mark_done calls mark_complete

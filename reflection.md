@@ -14,6 +14,7 @@
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+Yes, I changed the owner of the pet information and created pet and tasks as two different objects. Also, the schedule is under owner's info and pet is an object so owners could have more than one pet.
 
 ---
 
