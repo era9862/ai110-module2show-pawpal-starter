@@ -1,9 +1,20 @@
 classDiagram
+    class Owner {
+        +str name
+        +str email
+        +str phone
+        +List~Pet~ pets
+        +add_pet(pet) void
+        +remove_pet(pet) void
+        +get_pets() List~Pet~
+    }
+
     class Pet {
         +str name
         +str species
         +int age
         +str notes
+        +Owner owner
     }
 
     class Task {
@@ -16,6 +27,7 @@ classDiagram
     }
 
     class AddPet {
+        +Owner owner
         +add_pet(name, species, age, notes) Pet
         +validate() bool
     }
@@ -38,6 +50,8 @@ classDiagram
         +mark_done(task) void
     }
 
+    Owner "1" o-- "many" Pet : owns
+    AddPet --> Owner : adds pet for
     AddPet ..> Pet : creates
     AddPet --> PetSchedule : creates a schedule for each new pet
     PetSchedule o-- Pet : belongs to
