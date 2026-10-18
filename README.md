@@ -22,9 +22,20 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Features
+
+- **Pets and owner:** one owner with any number of pets. Adding a pet checks the input (name, species, non-negative age) and creates that pet's schedule.
+- **Task scheduling:** each task has a pet, date, time, duration, priority (low, medium, high) and how often it repeats (once, daily, weekly).
+- **Sorting by time:** today's tasks are listed in clock order, and tasks at the same time are ordered by priority (`sort_by_time()`).
+- **Filtering:** show one pet's tasks, only pending or only done tasks, or both filters together (`filter_tasks()`).
+- **Conflict warnings:** tasks whose time ranges overlap are flagged, for the same pet or different pets. The result is a readable warning, not an error, and nothing is rescheduled for you (`conflict_warnings()`).
+- **Daily and weekly recurrence:** completing a daily task creates the next one for the following day, and a weekly task recurs 7 days later (`mark_complete()`, `next_occurrence()`).
+- **Today's plan in the UI:** summary counts, conflict warnings above the table, filters, a sorted table and a "mark done" button for each pending task.
+- **Tests:** 30 automated tests cover sorting, recurrence, conflicts, filtering and input checks.
+
 ## Implementation summary
 
-The core logic lives in [pawpal_system.py](pawpal_system.py) (UML in [diagrams/uml.mmd](diagrams/uml.mmd)). It is plain Python with no UI dependency. [main.py](main.py) is a command-line demo that prints today's schedule, and [tests/test_pawpal.py](tests/test_pawpal.py) holds the tests. The Streamlit UI in `app.py` is not connected yet.
+The core logic lives in [pawpal_system.py](pawpal_system.py) and is plain Python with no UI dependency. The final class diagram is [diagrams/uml_final.mmd](diagrams/uml_final.mmd). [app.py](app.py) is the Streamlit UI, [main.py](main.py) is a command-line demo, and [tests/test_pawpal.py](tests/test_pawpal.py) holds the tests.
 
 ### How the classes work together
 
@@ -66,19 +77,7 @@ pip install -r requirements.txt
 
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
-
-```
-Today's Schedule for Jordan - Sunday, October 18, 2026
-============================================================
-[ ] 07:30 AM  Morning walk   Rex         30 min  (high)
-[ ] 09:00 AM  Medication     Whiskers     5 min  (high)
-[ ] 06:00 PM  Dinner         Rex         15 min  (medium)
-[ ] 06:10 PM  Playtime       Whiskers    20 min  (low)
-
-Conflicts:
-  ! Dinner (Rex) overlaps Playtime (Whiskers)
-```
+Run `python main.py` for a command-line demo. Its full output is shown in the Demo Walkthrough below.
 
 ## 🧪 Testing PawPal+
 
@@ -150,12 +149,75 @@ A recurring task is only due on its exact `due_date`. If you skip a day, the mis
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### Run the app
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+```bash
+streamlit run app.py     # the web UI
+python main.py           # the command-line demo
+```
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+### What you can do in the UI
+
+The page has three sections, from top to bottom:
+
+1. **Owner and pets:** set the owner's name and add pets (name, species, age, notes). Invalid input, such as a blank name, shows an error message.
+2. **Schedule a task:** choose a pet, then give the task a title, date, time, length in minutes, priority and how often it repeats.
+3. **Today's schedule:** shows the tasks due today with their counts (total, pending, done), any conflict warnings, filters for pet and status, a table sorted by time, and a button to mark each pending task done and one to remove it. An expander at the bottom lists every scheduled task on every day.
+
+### Example workflow
+
+1. Add a pet called Rex (dog) and one called Whiskers (cat).
+2. Schedule Rex's "Dinner" at 6:00 PM for 15 minutes, repeating daily.
+3. Schedule Whiskers's "Playtime" at 6:10 PM for 20 minutes.
+4. Scroll to Today's schedule. The table is sorted by time and a warning says Dinner overlaps Playtime.
+5. Click Remove next to "Playtime", then add it again at a free time such as 7:00 PM. When no tasks overlap, the page shows "No conflicts".
+6. Use the pet filter to show only Rex's tasks.
+7. Click the button for "Dinner" to mark it done. A message confirms it and says the next Dinner is scheduled for tomorrow.
+
+### Scheduler behaviors shown
+
+- **Sorting:** tasks added out of order appear in clock order, with priority breaking ties.
+- **Conflict warnings:** overlapping tasks are flagged, including tasks that belong to different pets.
+- **Filtering:** by pet and by pending or done.
+- **Recurrence:** finishing a daily or weekly task creates the next occurrence with the right date.
+
+### Sample CLI output
+
+This is the output of `python main.py`. The tasks are added out of order, then sorted and filtered. Two overlapping pairs are flagged, and completing a daily task creates the next one.
+
+```
+Today's Schedule for Jordan - Sunday, October 18, 2026
+
+Sorted by time
+------------------------------------------------------------
+[ ] Oct 18 07:30 AM  Morning walk   Rex         30 min  (high, daily)
+[ ] Oct 18 09:00 AM  Medication     Whiskers     5 min  (high, weekly)
+[ ] Oct 18 09:00 AM  Brush fur      Whiskers    10 min  (low, once)
+[ ] Oct 18 06:00 PM  Dinner         Rex         15 min  (medium, daily)
+[ ] Oct 18 06:10 PM  Playtime       Whiskers    20 min  (low, once)
+
+Filtered: Rex only
+------------------------------------------------------------
+[ ] Oct 18 07:30 AM  Morning walk   Rex         30 min  (high, daily)
+[ ] Oct 18 06:00 PM  Dinner         Rex         15 min  (medium, daily)
+
+Conflict warnings
+------------------------------------------------------------
+  Warning: 'Medication' at 09:00 overlaps 'Brush fur' at 09:00 for Whiskers
+  Warning: 'Dinner' at 18:00 overlaps 'Playtime' at 18:10 (Rex and Whiskers)
+
+After completing 'Morning walk': done tasks
+------------------------------------------------------------
+[x] Oct 18 07:30 AM  Morning walk   Rex         30 min  (high, daily)
+
+Still pending
+------------------------------------------------------------
+[ ] Oct 18 09:00 AM  Medication     Whiskers     5 min  (high, weekly)
+[ ] Oct 18 09:00 AM  Brush fur      Whiskers    10 min  (low, once)
+[ ] Oct 18 06:00 PM  Dinner         Rex         15 min  (medium, daily)
+[ ] Oct 18 06:10 PM  Playtime       Whiskers    20 min  (low, once)
+
+Next 'Morning walk' was created for Monday, October 19
+```
+
+**Screenshot or video** *(optional)*: not included.

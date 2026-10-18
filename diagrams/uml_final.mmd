@@ -1,0 +1,77 @@
+classDiagram
+    class Owner {
+        +str name
+        +str email
+        +str phone
+        +List~Pet~ pets
+        +List~PetSchedule~ schedules
+        +add_pet(pet) PetSchedule
+        +remove_pet(pet) void
+        +get_pets() List~Pet~
+        +get_schedules() List~PetSchedule~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +int age
+        +str notes
+        +Owner owner
+    }
+
+    class Task {
+        +str id
+        +str title
+        +Pet pet
+        +time due_time
+        +date due_date
+        +str frequency
+        +int duration
+        +str priority
+        +bool completed
+        +mark_complete() Task
+        +next_occurrence() Task
+        +is_due_on(day) bool
+        +minute_range() int_pair
+    }
+
+    class AddPet {
+        +Owner owner
+        +add_pet(name, species, age, notes) Pet
+        +validate(name, species, age) bool
+    }
+
+    class PetSchedule {
+        +Pet pet
+        +List~Task~ tasks
+        +add_task(title, due_time, duration, priority, due_date, frequency) Task
+        +remove_task(task) void
+        +complete_task(task) Task
+        +get_tasks() List~Task~
+    }
+
+    class TodaysTasks {
+        +date date
+        +List~Task~ tasks
+        -List~PetSchedule~ _schedules
+        +build_from(schedules) void
+        +sort_by_time() List~Task~
+        +get_pending() List~Task~
+        +filter_tasks(pet_name, completed) List~Task~
+        +find_conflicts() List~TaskPair~
+        +conflict_warnings() List~str~
+        +mark_done(task) Task
+    }
+
+    Owner "1" o-- "many" Pet : owns
+    Owner "1" *-- "many" PetSchedule : stores
+    PetSchedule "1" --> "1" Pet : belongs to
+    PetSchedule "1" *-- "many" Task : contains
+    Task "many" --> "1" Pet : is for
+    Task ..> Task : next_occurrence creates
+    AddPet --> Owner : adds pet for
+    AddPet ..> Pet : creates
+    TodaysTasks ..> PetSchedule : build_from reads
+    TodaysTasks o-- Task : lists today's
+    TodaysTasks ..> PetSchedule : mark_done completes via
+    PetSchedule ..> Task : complete_task stores next occurrence

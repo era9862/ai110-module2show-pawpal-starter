@@ -25,6 +25,14 @@ Yes, I changed the owner of the pet information and created pet and tasks as two
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+The scheduler considers three things:
+
+- **Time:** each task has a date, a start time and a duration. Time matters most because pet care runs on the clock, and a late medication is worse than a late play session. It decides the order of the plan and what counts as a conflict.
+- **Priority** (low, medium, high): it only breaks ties between tasks at the same time. It does not decide which tasks are kept.
+- **Frequency** (once, daily, weekly): it decides whether finishing a task creates the next one.
+
+I did not model owner preferences or the owner's total free time. The scheduler orders and checks the tasks it is given. It does not choose which ones to drop.
+
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
@@ -74,6 +82,16 @@ The most helpful prompts were specific and asked for one thing at a time ("add o
 - **Ran what it wrote.** After each step I checked the code actually ran: the module imported, `python3 main.py` printed the schedule, and `pytest` passed.
 - **Read the output, not just the code.** In the demo, Dinner and Playtime overlapped and the conflict check reported them, which confirmed the overlap logic worked.
 
+**c. AI strategy**
+
+- **Most effective features:**
+  - *Agent mode* made multi-file changes in one pass. Adding recurring tasks meant changing `Task`, `PetSchedule`, `TodaysTasks`, `main.py`, the tests and the UML together.
+  - *Asking it to review its own output* found the `Owner`/`Pet` recursion bug and the missing `Task`-to-`Pet` link before they caused trouble.
+  - *Running the code* after every change caught mistakes, such as a sorting test that passed even when the sort was broken.
+- **A suggestion I changed or rejected:** the AI's first diagram used `Pet` and `Task` as types without defining them, so I asked for both as separate classes. Later it offered to make the `Owner`/`Pet` link one-way, and I kept both directions and excluded `Pet.owner` from comparisons instead. It also proposed a shorter `itertools.combinations` version of conflict detection. I kept the loop that stops early on sorted tasks, because it is still readable and does less work.
+- **Separate chat sessions:** I did not use them. I did all phases in one long conversation, so I cannot say they helped. What kept me organized instead was that the project files carried the plan. The UML, the README and the tests recorded each decision, so I could check the AI's work against them. I would try separate sessions next time. A test-only session would not be anchored on how the code was written, and that is the kind of review that found the weak sorting test.
+- **Being the lead architect:** the AI writes code quickly, but it does not know what the app is for. I had to decide which classes exist, who owns what, which tradeoffs are acceptable (warn about conflicts, never reschedule) and when something was good enough. The AI offered options, and my job was to choose, check and keep the design simple.
+
 ---
 
 ## 4. Testing and Verification
@@ -83,10 +101,27 @@ The most helpful prompts were specific and asked for one thing at a time ("add o
 - What behaviors did you test?
 - Why were these tests important?
 
+I wrote 30 automated tests that call the classes in `pawpal_system.py` directly, without the UI:
+
+- **Sorting:** tasks come back in clock order, and ties are broken by priority.
+- **Recurrence:** a daily task creates the next one for tomorrow and a weekly task recurs 7 days later, including across month and year ends. A one-off task does not recur, and completing a task twice does not create a second copy.
+- **Conflicts:** same-time tasks, overlapping durations and tasks for different pets are flagged. Back-to-back tasks and tasks on other days are not.
+- **Filtering and edge cases:** a pet with no tasks, an empty day, zero-length tasks, bad priority, frequency, name or age values, and completing a task from the wrong schedule.
+
+These matter because the scheduler's value is in being right about order, repeats and overlaps, and a wrong date or a missed conflict would not be obvious when using the app. I also broke the code on purpose to check the tests can fail. That showed my first sorting test was too weak, so I rewrote it.
+
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+
+About 4 out of 5. All 30 tests pass, and breaking the code on purpose makes them fail. The reason it is not 5 is what is untested: the Streamlit UI has no automated tests, I only checked it by running it.
+
+Next I would test:
+- a task that runs past midnight, such as 23:50 for 30 minutes, against tasks early the next day
+- what happens to a recurring task that was skipped for a day
+- two pets with the same name
+- very long task lists
 
 ---
 
@@ -96,10 +131,19 @@ The most helpful prompts were specific and asked for one thing at a time ("add o
 
 - What part of this project are you most satisfied with?
 
+I am most satisfied that the scheduling logic is separate from the interface. The same classes run in the command-line demo, in the tests and in the Streamlit app, and the 30 tests mean I can change one without worrying about the others. Making each task a single dated occurrence also made recurrence simple and fixed a bug where a daily task stayed marked done the next day.
+
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+- Let a skipped recurring task roll forward into the next day's list instead of disappearing.
+- Add editing a task's time in the UI, so a conflict can be fixed in one step. Right now you remove the task and add it again.
+- Save the owner, pets and tasks between sessions.
+- Make the scheduler help decide what to do. It only sorts and warns today, and it could use free time and priority to suggest which tasks to drop or move.
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+Write the design down first and keep it up to date, because it is the only way to judge what the AI produces. The UML, the tests and the README were how I noticed the missing links and the weak test. The AI is a fast pair programmer, but I stay responsible for the structure and for checking that it works.

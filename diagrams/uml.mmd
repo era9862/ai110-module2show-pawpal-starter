@@ -32,7 +32,7 @@ classDiagram
         +mark_complete() Task
         +next_occurrence() Task
         +is_due_on(day) bool
-        +minute_range() int pair
+        +minute_range() int_pair
     }
 
     class AddPet {
@@ -53,23 +53,25 @@ classDiagram
     class TodaysTasks {
         +date date
         +List~Task~ tasks
+        -List~PetSchedule~ _schedules
         +build_from(schedules) void
         +sort_by_time() List~Task~
         +get_pending() List~Task~
         +filter_tasks(pet_name, completed) List~Task~
-        +find_conflicts() List~Task pair~
+        +find_conflicts() List~TaskPair~
         +conflict_warnings() List~str~
         +mark_done(task) Task
     }
 
     Owner "1" o-- "many" Pet : owns
     Owner "1" *-- "many" PetSchedule : stores
-    AddPet --> Owner : adds pet for
-    AddPet ..> Pet : creates
     PetSchedule "1" --> "1" Pet : belongs to
     PetSchedule "1" *-- "many" Task : contains
-    Task "many" --> "1" Pet : for
-    PetSchedule --> TodaysTasks : supplies tasks due today
+    Task "many" --> "1" Pet : is for
+    Task ..> Task : next_occurrence creates
+    AddPet --> Owner : adds pet for
+    AddPet ..> Pet : creates
+    TodaysTasks ..> PetSchedule : build_from reads
     TodaysTasks o-- Task : lists today's
-    PetSchedule ..> Task : complete_task calls mark_complete and stores next_occurrence
-    TodaysTasks ..> PetSchedule : mark_done completes via the owning schedule
+    TodaysTasks ..> PetSchedule : mark_done completes via
+    PetSchedule ..> Task : complete_task stores next occurrence
