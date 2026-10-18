@@ -83,18 +83,42 @@ Conflicts:
 ## 🧪 Testing PawPal+
 
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
 
-Sample test output:
+The 30 tests in [tests/test_pawpal.py](tests/test_pawpal.py) check the logic in `pawpal_system.py` directly, without the Streamlit UI.
+
+| Area | What is checked |
+|------|-----------------|
+| Sorting | Tasks come back in chronological order, even when priorities run the opposite way. Tasks at the same time are ordered by priority. |
+| Recurrence | Completing a daily task creates a copy due the next day. A weekly task recurs 7 days later. Dates roll over month and year ends. Chained completions work, and a one-off task does not recur. Completing a task twice does not create a second copy. The new copy keeps the title, time, duration, priority and pet and starts as not done. |
+| Conflicts | Two tasks at the same time are flagged, for the same pet or different pets. Overlapping durations are flagged, and back-to-back tasks are not. Tasks due on another day are ignored. |
+| Filtering | By pet, by done or pending, and both together. An unknown pet gives an empty list. |
+| Edge cases | A pet with no tasks, an empty day, zero-length tasks at the same time, and three tasks at one time. Bad priority or frequency values, completing or removing a task from the wrong schedule, and blank names or negative ages are rejected. |
+| Pets and owners | Adding a pet links it to its owner and creates one schedule. Re-adding it does not duplicate it. Removing a pet drops its schedule. |
+
+I also checked that the tests can fail. I broke the code on purpose (wrong recurrence date, touching tasks counted as conflicts, sort ignoring time, double completion creating a copy) and each break made at least one test fail. The sort check first passed by luck, because the priorities in my test matched the time order. I fixed the test so only a real time sort passes.
+
+Output of a successful run:
 
 ```
-# Paste your pytest output here
+============================= test session starts ==============================
+platform darwin -- Python 3.13.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: .
+collected 30 items
+
+tests/test_pawpal.py ..............................                      [100%]
+
+============================== 30 passed in 0.02s ==============================
 ```
+
+**Confidence level: ★★★★☆ (4 out of 5)**
+
+The scheduling logic is small, and the sorting, recurrence and conflict rules are covered by happy-path and edge-case tests that pass. I'm not giving 5 because of what is not covered:
+- The Streamlit UI (`app.py`) has no automated tests.
+- A task that runs past midnight (for example 23:50 for 30 minutes) is not compared with early tasks the next day.
+- A skipped recurring task does not roll forward into the next day's list.
+- Nothing is saved between sessions.
 
 ## 📐 Smarter Scheduling
 
